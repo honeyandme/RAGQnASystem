@@ -4,12 +4,17 @@
 
 ## 介绍
 
-![](img/all.png)
+<img src="img/all.png" style="zoom:100%;" />
+
+
+
 本项目设计了一个基于 RAG 与大模型技术的医疗问答系统，利用 DiseaseKG 数据集与 Neo4j 构建知识图谱，结合 BERT 的命名实体识别和 34b 大模型的意图识别，通过精确的知识检索和问答生成，提升系统在医疗咨询中的性能，解决大模型在医疗领域应用的可靠性问题。
 
 RAG技术：
 
-![](img/RAG.png)
+<img src="img/RAG.png" style="zoom:100%;" />
+
+
 
 ## :fire:To do
 
@@ -97,13 +102,15 @@ python build_up_graph.py --website http://localhost:7474 --user neo4j --password
 
 创建的知识图谱如下图所示（某一检索结果）：
 
-![](img/neo4j.png)
+<img src="img/neo4j.png" style="zoom:100%;" />
 
 ## 实体识别(NER)
 
 什么是NER？
 
-![](img/shitishibie.png)
+<img src="img/shitishibie.png" style="zoom:90%;" />
+
+
 
 
 
@@ -119,7 +126,9 @@ python ner_data.py #可以不运行
 
 注2：我们采用BIO的策略对数据集进行标注，标注的结果如下图所示：
 
-![](img/nerdata.png)
+<img src="img/nerdata.png" style="zoom:40%;" />
+
+
 
 **<u>模型训练：</u>**
 
@@ -169,7 +178,9 @@ class Bert_Model(nn.Module):
 
 什么是意图识别？
 
-![](img/yitushibie.jpg)
+<img src="img/yitushibie.jpg" style="zoom:50%;" />
+
+
 
 我们对比了3种意图识别的策略(规则匹配、训练模型、提示工程)：
 
@@ -189,7 +200,7 @@ class Bert_Model(nn.Module):
 
 我们为每一个意图，设置了一个查询语句。
 
-![](yuju-5852675.jpg)
+<img src="img/yuju.jpg" style="zoom:30%;" />
 
 注：这部分代码整合到了```webui.py```中，您无需进行任何操作。
 
@@ -203,23 +214,25 @@ streamlit run webui.py
 
 运行的界面如下图所示
 
-![](img/jiemian.png)
+<img src="img/jiemian.png" style="zoom:100%;" />
+
+
 
 几个运行例子：
 
-![](img/e1.png)
+<img src="img/e1.png" style="zoom:40%;" />
 
-![](img/e2.png)
+<img src="img/e2.png" style="zoom:40%;" />
 
-![](img/e3.png)
+<img src="img/e3.png" style="zoom:40%;" />
 
-![](img/e4.png)
+<img src="img/e4.png" style="zoom:40%;" />
 
-![](img/e5.png)
+<img src="img/e5.png" style="zoom:40%;" />
 
-![](img/e6.png)
+<img src="img/e6.png" style="zoom:40%;" />
 
-![](img/e7.png)
+<img src="img/e7.png" style="zoom:40%;" />
 
 ## 未来工作
 
@@ -227,7 +240,7 @@ streamlit run webui.py
 
 我们将意图归为16类，已经涵盖了大部分意图，但是无法穷尽所有的意图，无法充分利用知识图谱中的数据。因此，我们尝试进行NL2Cyhper：抛弃实体识别和意图识别两个操作，直接根据用户的问题生成查询语句。
 
-![](img/nl2cyhper.jpg)
+<img src="img/nl2cyhper.jpg" style="zoom:30%;" />
 
 问题：需要人工进行数据标注。
 
