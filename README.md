@@ -1,27 +1,30 @@
-
 # 基于RAG与大模型技术的医疗问答系统
-本项目使用的数据集来源于[Open-KG](http://data.openkg.cn/dataset/disease-information[)，参考了[RAGOnMedicalKG](https://github.com/liuhuanyong/RAGOnMedicalKG)、[QASystemOnMedicalKG](https://github.com/liuhuanyong/QASystemOnMedicalKG)
+
+本项目使用的数据集来源于[Open-KG](http://data.openkg.cn/dataset/disease-information)，参考了[RAGOnMedicalKG](https://github.com/liuhuanyong/RAGOnMedicalKG)、[QASystemOnMedicalKG](https://github.com/liuhuanyong/QASystemOnMedicalKG)
 
 ## 介绍
+
 ![](img/all.png)
-本项目设计了一个基于 RAG 与大模型技术的医疗问答系统，利用 DiseaseKG 数据集与 Neo4j 构建知识图谱，结合 Roberta 的命名实体识别和 34b 大模型的意图识别，通过精确的知识检索和问答生成，提升系统在医疗咨询中的性能，解决大模型在医疗领域应用的可靠性问题。
+本项目设计了一个基于 RAG 与大模型技术的医疗问答系统，利用 DiseaseKG 数据集与 Neo4j 构建知识图谱，结合 BERT 的命名实体识别和 34b 大模型的意图识别，通过精确的知识检索和问答生成，提升系统在医疗咨询中的性能，解决大模型在医疗领域应用的可靠性问题。
 
 RAG技术：
 
 ![](img/RAG.png)
 
 ## :fire:To do
+
 - [ ] NL2Cyhper
 - [ ] 增加界面的功能
 
 ## Python环境配置
+
 一个例子:
 
 ```
 git clone https://github.com/honeyandme/RQGQnASystem.git
-cd RQGQnASystem
-conda create -n RQGQnASystem python=3.10
-conda activate RQGQnASystem
+cd RAGQnASystem
+conda create -n RAGQnASystem python=3.10
+conda activate RAGQnASystem
 pip install -r requirements.txt
 ```
 
@@ -45,7 +48,54 @@ python build_up_graph.py --website http://localhost:7474 --user neo4j --password
 
 运行```build_up_graph.py```后，会自动在```data```文件夹下创建```ent_aug```文件夹和```rel_aug.txt```文件，分别存放所有实体和关系。
 
-创建的知识图谱如下图所示：
+
+
+下表展示了```medical_new_2.json```中的关键信息，更多详细信息请点击[这里](https://github.com/nuolade/disease-kb)查看：
+
+知识图谱实体类型（8类实体）：
+
+| 实体类型   | 中文含义 | 实体数量 | 举例               |
+| ---------- | -------- | -------- | ------------------ |
+| Disease    | 疾病     | 8808     | 急性肺脓肿         |
+| Drug       | 药品     | 3828     | 布林佐胺滴眼液     |
+| Food       | 食物     | 4870     | 芝麻               |
+| Check      | 检查项目 | 3353     | 胸部CT检查         |
+| Department | 科目     | 54       | 内科               |
+| Producer   | 在售药品 | 17,201   | 青阳醋酸地塞米松片 |
+| Symptom    | 疾病症状 | 5,998    | 乏力               |
+| Cure       | 治疗方法 | 544      | 抗生素药物治疗     |
+| Total      | 总计     | 44,656   | 约4.4万实体量级    |
+
+疾病实体属性类型（7类属性）：
+
+| 属性类型      | 中文含义     | 举例                          |
+| ------------- | ------------ | ----------------------------- |
+| name          | 疾病名称     | 成人呼吸窘迫综合征            |
+| desc          | 疾病简介     | 成人呼吸窘迫综合征简称ARDS... |
+| cause         | 疾病病因     | 化脓性感染可使细菌毒素...     |
+| prevent       | 预防措施     | 对高危的患者应严密观察...     |
+| cure_lasttime | 治疗周期     | 2-4月                         |
+| cured_prob    | 治愈概率     | 85%                           |
+| easy_get      | 疾病易感人群 | 无特定的人群                  |
+
+知识图谱关系类型（11类关系）：
+
+| 实体关系类型   | 中文含义     | 关系数量 | 举例                                     |
+| -------------- | ------------ | -------- | ---------------------------------------- |
+| belongs_to     | 属于         | 8,843    | <内科,属于, 呼吸内科>                    |
+| common_drug    | 疾病常用药品 | 14,647   | <成人呼吸窘迫综合征,常用, 人血白蛋白>    |
+| do_eat         | 疾病宜吃食物 | 22,230   | <成人呼吸窘迫综合征,宜吃,莲子>           |
+| drugs_of       | 药品在售药品 | 17,315   | <人血白蛋白,在售,莱士人蛋白人血白蛋白>   |
+| need_check     | 疾病所需检查 | 39,418   | <单侧肺气肿,所需检查,支气管造影>         |
+| no_eat         | 疾病忌吃食物 | 22,239   | <成人呼吸窘迫综合征,忌吃, 啤酒>          |
+| recommand_drug | 疾病推荐药品 | 59,465   | <混合痔,推荐用药,京万红痔疮膏>           |
+| recommand_eat  | 疾病推荐食谱 | 40,221   | <成人呼吸窘迫综合征,推荐食谱,百合糖粥>   |
+| has_symptom    | 疾病症状     | 54,710   | <成人呼吸窘迫综合征,疾病症状,呼吸困难>   |
+| acompany_with  | 疾病并发疾病 | 12,024   | <成人呼吸窘迫综合征,并发疾病,细菌性肺炎> |
+| cure_way       | 疾病治疗方法 | 21，047  | <急性肺脓肿,治疗方法,抗生素药物治疗>     |
+| Total          | 总计         | 312,159  | 约31万关系量级                           |
+
+创建的知识图谱如下图所示（某一检索结果）：
 
 ![](img/neo4j.png)
 
@@ -61,9 +111,13 @@ python build_up_graph.py --website http://localhost:7474 --user neo4j --password
 
 你可以运行```ner_data.py```，这段代码会根据```data/medical_new_2.json```中的文字，结合规则匹配技术，创建一个NER数据集，保存在```data/ner_data_aug.txt```中。
 
-我们已经上传了```ner_data_aug.txt```文件，您可以选择不运行```ner_data.py```。
+```
+python ner_data.py #可以不运行
+```
 
-注：我们采用BIO的策略对数据集进行标注，标注的结果如下图所示：
+注1：我们已经上传了```ner_data_aug.txt```文件，您可以选择不运行```ner_data.py```。
+
+注2：我们采用BIO的策略对数据集进行标注，标注的结果如下图所示：
 
 ![](img/nerdata.png)
 
@@ -71,18 +125,45 @@ python build_up_graph.py --website http://localhost:7474 --user neo4j --password
 
 ```ner_model.py``` 代码定义了NER模型的网络架构和训练方式。若您需要重新训练一个模型，请您在Huggingface上下载一个[chinese-roberta-wwm-ext](https://huggingface.co/hfl/chinese-roberta-wwm-ext)，并保存在```model```文件夹下，然后运行```ner_model.py``` 。
 
-若您不想训练，可以[下载]()我们训练好的模型，并保存在```model```文件夹下。
+```
+python ner_model.py #可以不运行
+```
 
+注1：若您不想训练，可以[下载](https://pan.baidu.com/s/1kwiNDyNjO2E2uO0oYmK8SA?pwd=08or)我们训练好的模型，并保存在```model```文件夹下，无需运行训练代码。
 
+注2：我们的NER模型采用了简单的BERT架构。
 
-我们的训练过程运用了实体替换、实体掩码、实体拼接三种数据增强策略，改进了模型的性能。
+```python
+class Bert_Model(nn.Module):
+    def __init__(self, model_name, hidden_size, tag_num, bi):
+        super().__init__()
+        self.bert = BertModel.from_pretrained(model_name)
+        self.lstm = nn.LSTM(input_size=768, hidden_size=hidden_size, num_layers=2, batch_first=True, bidirectional=bi)
+        if bi:
+            self.classifier = nn.Linear(hidden_size*2, tag_num)
+        else:
+            self.classifier = nn.Linear(hidden_size, tag_num)
+        self.loss_fn = nn.CrossEntropyLoss(ignore_index=0)
+
+    def forward(self, x, label=None):
+        bert_0, _ = self.bert(x, attention_mask=(x > 0), return_dict=False)
+        gru_0, _ = self.lstm(bert_0)
+        pre = self.classifier(gru_0)
+        if label is not None:
+            loss = self.loss_fn(pre.reshape(-1, pre.shape[-1]), label.reshape(-1))
+            return loss
+        else:
+            return torch.argmax(pre, dim=-1).squeeze(0)
+```
+
+注3:我们在训练过程运用了实体替换、实体掩码、实体拼接三种数据增强策略，改进了模型的性能。下面是在测试集上的F1 Score：
 
 | 模型名称                | 未数据增强 | 数据增强 |
 | ----------------------- | ---------- | -------- |
 | bert-base-chinese       | 97.13%     | 97.42%   |
 | chinese-roberta-wwm-ext | 96.77%     | 97.40%   |
 
-
+注4：为了使模型的识别结果与知识图谱上的实体名相匹配，我们使用了TF-IDF实体对齐。
 
 ## 意图识别
 
@@ -90,11 +171,23 @@ python build_up_graph.py --website http://localhost:7474 --user neo4j --password
 
 ![](img/yitushibie.jpg)
 
-本项目的意图识别方案：直接设计Prompt，让大模型对用户的查询进行意图分析。我们结合了上下文学习和思维链技术，最终取得了良好的结果。
+我们对比了3种意图识别的策略(规则匹配、训练模型、提示工程)：
 
-注：这部分代码整合到了```webui.py```中，您无需进行任何操作。
+| 策略     | 准确性 | 多意图识别 | 人工成本     | 推理速度 | 资源消耗 |
+| -------- | ------ | ---------- | ------------ | -------- | -------- |
+| 规则匹配 | 低     | x          | 低           | 快       | 低       |
+| 训练模型 | 高     | x          | 高(数据标注) | 中等     | 中等     |
+| 提示工程 | 高     | ✓          | 低           | 慢       | 高       |
+
+综合考虑，我们采用了提示工程的手段：我们将意图分为16种，根据16类意图设计Prompt，让大模型对用户的查询进行意图分析。
+
+注1：我们结合了上下文学习和思维链技术，最终取得了良好的结果。
+
+注2：这部分代码整合到了```webui.py```中，您无需进行任何操作。
 
 ## 知识图谱查询
+
+我们为每一个意图，设置了一个查询语句。
 
 ![](yuju-5852675.jpg)
 
@@ -127,3 +220,20 @@ streamlit run webui.py
 ![](img/e6.png)
 
 ![](img/e7.png)
+
+## 未来工作
+
+### NL2Cyhper
+
+我们将意图归为16类，已经涵盖了大部分意图，但是无法穷尽所有的意图，无法充分利用知识图谱中的数据。因此，我们尝试进行NL2Cyhper：抛弃实体识别和意图识别两个操作，直接根据用户的问题生成查询语句。
+
+![](img/nl2cyhper.jpg)
+
+问题：需要人工进行数据标注。
+
+## 联系方式
+
+如果您的复现遇到了困难，请随时联系！
+
+邮箱：zeromakers@outlook.com
+
