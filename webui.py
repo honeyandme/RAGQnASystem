@@ -261,118 +261,104 @@ def ans_stream(prompt):
 
 
 
-def main(is_admin,usname):
+def main(is_admin, usname):
     cache_model = 'best_roberta_rnn_model_ent_aug'
     st.title(f"医疗智能问答机器人")
-
 
     with st.sidebar:
         col1, col2 = st.columns([0.6, 0.6])
         with col1:
-        # 显示图片，使用列宽
-            st.image(
-                os.path.join("img", "logo.jpg"),
-                use_column_width=True
-        )
-        
+            st.image(os.path.join("img", "logo.jpg"), use_column_width=True)
+
         st.caption(
-                f"""<p align="left">欢迎您，{'管理员' if is_admin else '用户'}{usname}！当前版本：{1.0}</p>""",
-                unsafe_allow_html=True,
-            )
-        selected_option = st.selectbox(
-        label='请选择大语言模型:',
-        options=['Qwen 1.5', 'Llama2-Chinese']
+            f"""<p align="left">欢迎您，{'管理员' if is_admin else '用户'}{usname}！当前版本：{1.0}</p>""",
+            unsafe_allow_html=True,
         )
-        if selected_option == 'Qwen 1.5':
-            choice = 'qwen:32b'
-        else:
-            choice = 'llama2-chinese:13b-chat-q8_0'
-        
-        # max_new_tokens = st.number_input("max_new_tokens", 128, 4096, 512)
-        # k = st.number_input("k", 1, 10, 3)
-        show_ent = st.sidebar.checkbox("显示实体识别结果")
-        show_int = st.sidebar.checkbox("显示意图识别结果")
-        show_prompt = st.sidebar.checkbox("显示查询的知识库信息")
+
+        if 'chat_windows' not in st.session_state:
+            st.session_state.chat_windows = [[]]
+            st.session_state.messages = [[]]
+
+        if st.button('新建对话窗口'):
+            st.session_state.chat_windows.append([])
+            st.session_state.messages.append([])
+
+        window_options = [f"对话窗口 {i + 1}" for i in range(len(st.session_state.chat_windows))]
+        selected_window = st.selectbox('请选择对话窗口:', window_options)
+        active_window_index = int(selected_window.split()[1]) - 1
+
+        selected_option = st.selectbox(
+            label='请选择大语言模型:',
+            options=['Qwen 1.5', 'Llama2-Chinese']
+        )
+        choice = 'qwen:32b' if selected_option == 'Qwen 1.5' else 'llama2-chinese:13b-chat-q8_0'
+
+        show_ent = show_int = show_prompt = False
+        if is_admin:
+            show_ent = st.sidebar.checkbox("显示实体识别结果")
+            show_int = st.sidebar.checkbox("显示意图识别结果")
+            show_prompt = st.sidebar.checkbox("显示查询的知识库信息")
+
         if st.button("返回登录"):
-            # 重置会话状态
             st.session_state.logged_in = False
             st.session_state.admin = False
-            st.experimental_rerun()  # 重新运行应用，显示登录页面
-    glm_tokenizer,glm_model,bert_tokenizer,bert_model,idx2tag,rule,tfidf_r,device = load_model(cache_model)  # load our models once and then cache it
-#数据库
+            st.experimental_rerun()
+
+    glm_tokenizer, glm_model, bert_tokenizer, bert_model, idx2tag, rule, tfidf_r, device = load_model(cache_model)
     client = py2neo.Graph('http://localhost:7474', user='neo4j', password='wei8kang7.long', name='neo4j')
 
-    # Initialize chat history
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    current_messages = st.session_state.messages[active_window_index]
 
-    # Display chat messages from history on app rerun
-    for message in st.session_state.messages:
+    for message in current_messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
             if message["role"] == "assistant":
-                ent_placeholder = st.empty()
-                yitu_placeholder = st.empty()
-                expander_placeholder = st.empty()
                 if show_ent:
-                    with ent_placeholder.expander("实体识别结果"):
-                        st.write(message["ent"])  # 在这里显示给定的意图
+                    with st.expander("实体识别结果"):
+                        st.write(message.get("ent", ""))
                 if show_int:
-                    with yitu_placeholder.expander("意图识别结果"):
-                        st.write(message["yitu"])  # 在这里显示给定的意图
+                    with st.expander("意图识别结果"):
+                        st.write(message.get("yitu", ""))
                 if show_prompt:
-                    with expander_placeholder.expander("点击显示知识库信息"):
-                        st.write(message["prompt"])  # 在这里显示给定的prompt
+                    with st.expander("点击显示知识库信息"):
+                        st.write(message.get("prompt", ""))
 
-
-    # Accept user input
-    if query := st.chat_input("Ask me anything!"):
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": query})
-        # Display user message in chat message container
+    if query := st.chat_input("Ask me anything!", key=f"chat_input_{active_window_index}"):
+        current_messages.append({"role": "user", "content": query})
         with st.chat_message("user"):
             st.markdown(query)
 
+        response_placeholder = st.empty()
+        response_placeholder.text("正在进行意图识别...")
+
+        query = current_messages[-1]["content"]
+        response = Intent_Recognition(query, choice)
+        response_placeholder.empty()
+
+        prompt, yitu, entities = generate_prompt(response, query, client, bert_model, bert_tokenizer, rule, tfidf_r, device, idx2tag)
+
+        last = ""
+        for chunk in ollama.chat(model=choice, messages=[{'role': 'user', 'content': prompt}], stream=True):
+            last += chunk['message']['content']
+            response_placeholder.markdown(last)
+        response_placeholder.markdown("")
+
+        knowledge = re.findall(r'<提示>(.*?)</提示>', prompt)
+        zhishiku_content = "\n".join([f"提示{idx + 1}, {kn}" for idx, kn in enumerate(knowledge) if len(kn) >= 3])
         with st.chat_message("assistant"):
-            query = st.session_state.messages[-1]["content"]
-            context = None
-            # Create a placeholder for the assistant's response
-            placeholder = st.empty()
-            last=""
-            # Simulate the typing effect
-
-            intent_recognition_placeholder = st.empty()  # 创建一个新的占位符
-            intent_recognition_placeholder.text("正在进行意图识别...")  # 在占位符中显示提示信息
-            response = Intent_Recognition(query,choice)
-            intent_recognition_placeholder.empty()  # 意图识别完成后，清除提示信息
-
-            prompt,yitu,entities = generate_prompt(response,query,client,bert_model, bert_tokenizer,rule, tfidf_r, device, idx2tag)
-
-            ent_placeholder = st.empty()
-            yitu_placeholder = st.empty()
-            expander_placeholder = st.empty()
+            st.markdown(last)
             if show_ent:
-                with ent_placeholder.expander("实体识别结果"):
-                    st.write(str(entities))  # 在这里显示给定的意图
+                with st.expander("实体识别结果"):
+                    st.write(str(entities))
             if show_int:
-                with yitu_placeholder.expander("意图识别结果"):
-                    st.write(yitu)  # 在这里显示给定的意图
-            knowledge =  re.findall(r'<提示>(.*?)</提示>',prompt)
-            idx = 1
-            zhishiku_content = []
-            for kn in knowledge:
-                if len(kn)>=3:
-                    zhishiku_content.append(f"提示{idx},{kn}\n")
-                    idx = idx+1
-            zhishiku_content = "\n".join(zhishiku_content)
+                with st.expander("意图识别结果"):
+                    st.write(yitu)
             if show_prompt:
-                with expander_placeholder.expander("点击显示知识库信息"):
-                    st.write(zhishiku_content)  # 在这里显示给定的prompt
-            
-
-            for chunk in ollama.chat(model=choice,messages=[{'role': 'user', 'content': prompt}],stream=True):
-                last += chunk['message']['content']
-                placeholder.markdown(last)  # Update the placeholder with the new part of the message
                 
-        st.session_state.messages.append({"role": "assistant", "content": last,"yitu":yitu,"prompt":zhishiku_content,"ent":str(entities)})
-# main(True,'zwkk')
+                
+                with st.expander("点击显示知识库信息"):
+                    st.write(zhishiku_content)
+        current_messages.append({"role": "assistant", "content": last, "yitu": yitu, "prompt": zhishiku_content, "ent": str(entities)})
+
+
+    st.session_state.messages[active_window_index] = current_messages
