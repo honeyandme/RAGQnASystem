@@ -261,7 +261,7 @@ def ans_stream(prompt):
 
 
 
-def main(is_admin):
+def main(is_admin,usname):
     cache_model = 'best_roberta_rnn_model_ent_aug'
     st.title(f"医疗智能问答机器人")
 
@@ -276,7 +276,7 @@ def main(is_admin):
         )
         
         st.caption(
-                f"""<p align="left">欢迎您，{'管理员' if is_admin else '用户'}！当前版本：{1.0}</p>""",
+                f"""<p align="left">欢迎您，{'管理员' if is_admin else '用户'}{usname}！当前版本：{1.0}</p>""",
                 unsafe_allow_html=True,
             )
         selected_option = st.selectbox(
@@ -371,4 +371,4 @@ def main(is_admin):
                 placeholder.markdown(last)  # Update the placeholder with the new part of the message
                 
         st.session_state.messages.append({"role": "assistant", "content": last,"yitu":yitu,"prompt":zhishiku_content,"ent":str(entities)})
-main(True)
+# main(True,'zwkk')
