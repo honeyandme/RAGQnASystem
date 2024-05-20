@@ -9,32 +9,10 @@ import py2neo
 import random
 import re
 
-cache_model = 'best_roberta_rnn_model_ent_aug'
-st.title("医疗智能问答机器人")
-
-
-with st.sidebar:
-    st.image(
-            os.path.join(
-                "img",
-                "logo.jpg"
-            ),
-            use_column_width=True
-        )
-    st.caption(
-            f"""<p align="right">当前版本：{1.0}</p>""",
-            unsafe_allow_html=True,
-        )
-    
-    # max_new_tokens = st.number_input("max_new_tokens", 128, 4096, 512)
-    # k = st.number_input("k", 1, 10, 3)
-    show_ent = st.sidebar.checkbox("显示实体识别结果")
-    show_int = st.sidebar.checkbox("显示意图识别结果")
-    show_prompt = st.sidebar.checkbox("显示查询的知识库信息")
 
 
 @st.cache_resource
-def load_model():
+def load_model(cache_model):
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     #加载ChatGLM模型
     # glm_tokenizer = AutoTokenizer.from_pretrained("model/chatglm3-6b-128k", trust_remote_code=True)
@@ -57,9 +35,7 @@ def load_model():
     bert_model.eval()
     return glm_tokenizer,glm_model,bert_tokenizer,bert_model,idx2tag,rule,tfidf_r,device
 
-glm_tokenizer,glm_model,bert_tokenizer,bert_model,idx2tag,rule,tfidf_r,device = load_model()  # load our models once and then cache it
-#数据库
-client = py2neo.Graph('http://localhost:7474', user='neo4j', password='wei8kang7.long', name='neo4j')
+
 
 def Intent_Recognition(query):
     prompt = f"""
@@ -139,7 +115,7 @@ def Intent_Recognition(query):
     # return response
 
 
-def add_shuxing_prompt(entity,shuxing):
+def add_shuxing_prompt(entity,shuxing,client):
     add_prompt = ""
     try:
         sql_q = "match (a:疾病{名称:'%s'}) return a.%s" % (entity,shuxing)
@@ -155,7 +131,7 @@ def add_shuxing_prompt(entity,shuxing):
     except:
         pass
     return add_prompt
-def add_lianxi_prompt(entity,lianxi,target):
+def add_lianxi_prompt(entity,lianxi,target,client):
     add_prompt = ""
     
     try:
@@ -173,7 +149,7 @@ def add_lianxi_prompt(entity,lianxi,target):
     except:
         pass
     return add_prompt
-def generate_prompt(response,query,client):
+def generate_prompt(response,query,client,bert_model, bert_tokenizer,rule, tfidf_r, device, idx2tag):
     entities = zwk.get_ner_result(bert_model, bert_tokenizer, query, rule, tfidf_r, device, idx2tag)
     # print(response)
     # print(entities)
@@ -191,47 +167,47 @@ def generate_prompt(response,query,client):
     pre_len = len(prompt)
     if "简介" in response:
         if '疾病' in entities:
-            prompt+=add_shuxing_prompt(entities['疾病'],'疾病简介')
+            prompt+=add_shuxing_prompt(entities['疾病'],'疾病简介',client)
             yitu.append('查询疾病简介')
     if "病因" in response:
         if '疾病' in entities:
-            prompt+=add_shuxing_prompt(entities['疾病'],'疾病病因')
+            prompt+=add_shuxing_prompt(entities['疾病'],'疾病病因',client)
             yitu.append('查询疾病病因')
     if "预防" in response:
         if '疾病' in entities:
-            prompt+=add_shuxing_prompt(entities['疾病'],'预防措施')
+            prompt+=add_shuxing_prompt(entities['疾病'],'预防措施',client)
             yitu.append('查询预防措施')
     if "治疗周期" in response:
         if '疾病' in entities:
-            prompt+=add_shuxing_prompt(entities['疾病'],'治疗周期')
+            prompt+=add_shuxing_prompt(entities['疾病'],'治疗周期',client)
             yitu.append('查询治疗周期')
     if "治愈概率" in response:
         if '疾病' in entities:
-            prompt+=add_shuxing_prompt(entities['疾病'],'治愈概率')
+            prompt+=add_shuxing_prompt(entities['疾病'],'治愈概率',client)
             yitu.append('查询治愈概率')
     if "易感人群" in response:
         if '疾病' in entities:
-            prompt+=add_shuxing_prompt(entities['疾病'],'疾病易感人群')
+            prompt+=add_shuxing_prompt(entities['疾病'],'疾病易感人群',client)
             yitu.append('查询疾病易感人群')
     if "药品" in response:
         if '疾病' in entities:
-            prompt+=add_lianxi_prompt(entities['疾病'],'疾病使用药品','药品')
+            prompt+=add_lianxi_prompt(entities['疾病'],'疾病使用药品','药品',client)
             yitu.append('查询疾病使用药品')
     if "宜吃食物" in response:
         if '疾病' in entities:
-            prompt+=add_lianxi_prompt(entities['疾病'],'疾病宜吃食物','食物')
+            prompt+=add_lianxi_prompt(entities['疾病'],'疾病宜吃食物','食物',client)
             yitu.append('查询疾病宜吃食物')
     if "忌吃食物" in response:
         if '疾病' in entities:
-            prompt+=add_lianxi_prompt(entities['疾病'],'疾病忌吃食物','食物')
+            prompt+=add_lianxi_prompt(entities['疾病'],'疾病忌吃食物','食物',client)
             yitu.append('查询疾病忌吃食物')
     if "检查项目" in response:
         if '疾病' in entities:
-            prompt+=add_lianxi_prompt(entities['疾病'],'疾病所需检查','检查项目')
+            prompt+=add_lianxi_prompt(entities['疾病'],'疾病所需检查','检查项目',client)
             yitu.append('查询疾病所需检查')
     if "查询疾病所属科目" in response:
         if '疾病' in entities:
-            prompt+=add_lianxi_prompt(entities['疾病'],'疾病所属科目','科目')
+            prompt+=add_lianxi_prompt(entities['疾病'],'疾病所属科目','科目',client)
             yitu.append('查询疾病所属科目')
     # if "所属科目" in response:
     #     if '疾病' in entities:
@@ -239,15 +215,15 @@ def generate_prompt(response,query,client):
     #         yitu.append('查询疾病所属科目')
     if "症状" in response:
         if '疾病' in entities:
-            prompt+=add_lianxi_prompt(entities['疾病'],'疾病的症状','疾病症状')
+            prompt+=add_lianxi_prompt(entities['疾病'],'疾病的症状','疾病症状',client)
             yitu.append('查询疾病的症状')
     if "治疗" in response:
         if '疾病' in entities:
-            prompt+=add_lianxi_prompt(entities['疾病'],'治疗的方法','治疗方法')
+            prompt+=add_lianxi_prompt(entities['疾病'],'治疗的方法','治疗方法',client)
             yitu.append('查询治疗的方法')
     if "并发" in response:
         if '疾病' in entities:
-            prompt+=add_lianxi_prompt(entities['疾病'],'疾病并发疾病','疾病')
+            prompt+=add_lianxi_prompt(entities['疾病'],'疾病并发疾病','疾病',client)
             yitu.append('查询疾病并发疾病')
     if "生产商" in response:
         try:
@@ -285,84 +261,114 @@ def ans_stream(prompt):
 
 
 
+def main(is_admin):
+    cache_model = 'best_roberta_rnn_model_ent_aug'
+    st.title(f"医疗智能问答机器人")
 
 
-# Initialize chat history
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+    with st.sidebar:
+        col1, col2 = st.columns([0.6, 0.6])
+        with col1:
+        # 显示图片，使用列宽
+            st.image(
+                os.path.join("img", "logo.jpg"),
+                use_column_width=True
+        )
+        
+        st.caption(
+                f"""<p align="left">欢迎您，{'管理员' if is_admin else '用户'}！当前版本：{1.0}</p>""",
+                unsafe_allow_html=True,
+            )
+        selected_option = st.selectbox(
+        label='请选择大语言模型:',
+        options=['Qwen 1.5', 'Llama2-Chinese']
+        )
+        
+        # max_new_tokens = st.number_input("max_new_tokens", 128, 4096, 512)
+        # k = st.number_input("k", 1, 10, 3)
+        show_ent = st.sidebar.checkbox("显示实体识别结果")
+        show_int = st.sidebar.checkbox("显示意图识别结果")
+        show_prompt = st.sidebar.checkbox("显示查询的知识库信息")
+        if st.button("返回登录"):
+            # 重置会话状态
+            st.session_state.logged_in = False
+            st.session_state.admin = False
+            st.experimental_rerun()  # 重新运行应用，显示登录页面
+    glm_tokenizer,glm_model,bert_tokenizer,bert_model,idx2tag,rule,tfidf_r,device = load_model(cache_model)  # load our models once and then cache it
+#数据库
+    client = py2neo.Graph('http://localhost:7474', user='neo4j', password='wei8kang7.long', name='neo4j')
 
-# Display chat messages from history on app rerun
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-        if message["role"] == "assistant":
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # Display chat messages from history on app rerun
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+            if message["role"] == "assistant":
+                ent_placeholder = st.empty()
+                yitu_placeholder = st.empty()
+                expander_placeholder = st.empty()
+                if show_ent:
+                    with ent_placeholder.expander("实体识别结果"):
+                        st.write(message["ent"])  # 在这里显示给定的意图
+                if show_int:
+                    with yitu_placeholder.expander("意图识别结果"):
+                        st.write(message["yitu"])  # 在这里显示给定的意图
+                if show_prompt:
+                    with expander_placeholder.expander("点击显示知识库信息"):
+                        st.write(message["prompt"])  # 在这里显示给定的prompt
+
+
+    # Accept user input
+    if query := st.chat_input("Ask me anything!"):
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": query})
+        # Display user message in chat message container
+        with st.chat_message("user"):
+            st.markdown(query)
+
+        with st.chat_message("assistant"):
+            query = st.session_state.messages[-1]["content"]
+            context = None
+            # Create a placeholder for the assistant's response
+            placeholder = st.empty()
+            last=""
+            # Simulate the typing effect
+
+            intent_recognition_placeholder = st.empty()  # 创建一个新的占位符
+            intent_recognition_placeholder.text("正在进行意图识别...")  # 在占位符中显示提示信息
+            response = Intent_Recognition(query)
+            intent_recognition_placeholder.empty()  # 意图识别完成后，清除提示信息
+
+            prompt,yitu,entities = generate_prompt(response,query,client,bert_model, bert_tokenizer,rule, tfidf_r, device, idx2tag)
+
             ent_placeholder = st.empty()
             yitu_placeholder = st.empty()
             expander_placeholder = st.empty()
             if show_ent:
                 with ent_placeholder.expander("实体识别结果"):
-                    st.write(message["ent"])  # 在这里显示给定的意图
+                    st.write(str(entities))  # 在这里显示给定的意图
             if show_int:
                 with yitu_placeholder.expander("意图识别结果"):
-                    st.write(message["yitu"])  # 在这里显示给定的意图
+                    st.write(yitu)  # 在这里显示给定的意图
+            knowledge =  re.findall(r'<提示>(.*?)</提示>',prompt)
+            idx = 1
+            zhishiku_content = []
+            for kn in knowledge:
+                if len(kn)>=3:
+                    zhishiku_content.append(f"提示{idx},{kn}\n")
+                    idx = idx+1
+            zhishiku_content = "\n".join(zhishiku_content)
             if show_prompt:
                 with expander_placeholder.expander("点击显示知识库信息"):
-                    st.write(message["prompt"])  # 在这里显示给定的prompt
-
-options = [
-        "What is the weather today?",
-        "Tell me a joke.",
-        "How do I make a chocolate cake?",
-        "What's the latest news?"
-    ]
-
-# Accept user input
-if query := st.chat_input("Ask me anything!"):
-    # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": query})
-    # Display user message in chat message container
-    with st.chat_message("user"):
-        st.markdown(query)
-
-    with st.chat_message("assistant"):
-        query = st.session_state.messages[-1]["content"]
-        context = None
-        # Create a placeholder for the assistant's response
-        placeholder = st.empty()
-        last=""
-        # Simulate the typing effect
-
-        intent_recognition_placeholder = st.empty()  # 创建一个新的占位符
-        intent_recognition_placeholder.text("正在进行意图识别...")  # 在占位符中显示提示信息
-        response = Intent_Recognition(query)
-        intent_recognition_placeholder.empty()  # 意图识别完成后，清除提示信息
-
-        prompt,yitu,entities = generate_prompt(response,query,client)
-
-        ent_placeholder = st.empty()
-        yitu_placeholder = st.empty()
-        expander_placeholder = st.empty()
-        if show_ent:
-            with ent_placeholder.expander("实体识别结果"):
-                st.write(str(entities))  # 在这里显示给定的意图
-        if show_int:
-            with yitu_placeholder.expander("意图识别结果"):
-                st.write(yitu)  # 在这里显示给定的意图
-        knowledge =  re.findall(r'<提示>(.*?)</提示>',prompt)
-        idx = 1
-        zhishiku_content = []
-        for kn in knowledge:
-            if len(kn)>=3:
-                zhishiku_content.append(f"提示{idx},{kn}\n")
-                idx = idx+1
-        zhishiku_content = "\n".join(zhishiku_content)
-        if show_prompt:
-            with expander_placeholder.expander("点击显示知识库信息"):
-                st.write(zhishiku_content)  # 在这里显示给定的prompt
-        
-
-        for chunk in ollama.chat(model='qwen:32b',messages=[{'role': 'user', 'content': prompt}],stream=True):
-            last += chunk['message']['content']
-            placeholder.markdown(last)  # Update the placeholder with the new part of the message
+                    st.write(zhishiku_content)  # 在这里显示给定的prompt
             
-    st.session_state.messages.append({"role": "assistant", "content": last,"yitu":yitu,"prompt":zhishiku_content,"ent":str(entities)})
+
+            for chunk in ollama.chat(model='qwen:32b',messages=[{'role': 'user', 'content': prompt}],stream=True):
+                last += chunk['message']['content']
+                placeholder.markdown(last)  # Update the placeholder with the new part of the message
+                
+        st.session_state.messages.append({"role": "assistant", "content": last,"yitu":yitu,"prompt":zhishiku_content,"ent":str(entities)})
+main(True)
