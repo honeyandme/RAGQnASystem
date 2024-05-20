@@ -4,8 +4,9 @@
 
 ## 介绍
 
-<img src="img/all.png" style="zoom:100%;" />
+本项目整体流程：
 
+<img src="img/all.png" style="zoom:100%;" />
 
 
 本项目设计了一个基于 RAG 与大模型技术的医疗问答系统，利用 DiseaseKG 数据集与 Neo4j 构建知识图谱，结合 BERT 的命名实体识别和 34b 大模型的意图识别，通过精确的知识检索和问答生成，提升系统在医疗咨询中的性能，解决大模型在医疗领域应用的可靠性问题。
@@ -15,6 +16,10 @@ RAG技术：
 <img src="img/RAG.png" style="zoom:100%;" />
 
 
+
+本项目采用知识图谱实现RAG，如果您想用向量数据库实现RAG技术，可以参考[Langchain-Chatchat](https://github.com/chatchat-space/Langchain-Chatchat)项目：
+
+<img src="img/langchain+chatglm.png" style="zoom:50%;" />
 
 ## :fire:To do
 
@@ -26,7 +31,7 @@ RAG技术：
 一个例子:
 
 ```
-git clone https://github.com/honeyandme/RQGQnASystem.git
+git clone https://github.com/honeyandme/RAGQnASystem.git
 cd RAGQnASystem
 conda create -n RAGQnASystem python=3.10
 conda activate RAGQnASystem
