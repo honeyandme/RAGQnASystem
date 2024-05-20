@@ -37,7 +37,7 @@ def load_model(cache_model):
 
 
 
-def Intent_Recognition(query):
+def Intent_Recognition(query,choice):
     prompt = f"""
 阅读下列提示，回答问题（问题在输入的最后）:
 当你试图识别用户问题中的查询意图时，你需要仔细分析问题，并在16个预定义的查询类别中一一进行判断。对于每一个类别，思考用户的问题是否含有与该类别对应的意图。如果判断用户的问题符合某个特定类别，就将该类别加入到输出列表中。这样的方法要求你对每一个可能的查询意图进行系统性的考虑和评估，确保没有遗漏任何一个可能的分类。
@@ -108,7 +108,7 @@ def Intent_Recognition(query):
 输出的时候请确保输出内容都在**查询类别**中出现过。确保输出类别个数**不要超过5个**！确保你的解释和合乎逻辑的！注意，如果用户询问了有关疾病的问题，一般都要先介绍一下疾病，也就是有"查询疾病简介"这个需求。
 再次检查你的输出都包含在**查询类别**:"查询疾病简介"、"查询疾病病因"、"查询疾病预防措施"、"查询疾病治疗周期"、"查询治愈概率"、"查询疾病易感人群"、"查询疾病所需药品"、"查询疾病宜吃食物"、"查询疾病忌吃食物"、"查询疾病所需检查项目"、"查询疾病所属科目"、"查询疾病的症状"、"查询疾病的治疗方法"、"查询疾病的并发疾病"、"查询药品的生产商"。
 """
-    rec_result = ollama.generate(model='qwen:32b', prompt=prompt)['response']
+    rec_result = ollama.generate(model=choice, prompt=prompt)['response']
     print(f'意图识别结果:{rec_result}')
     return rec_result
     # response, _ = glm_model.chat(glm_tokenizer, prompt, history=[])
@@ -283,6 +283,10 @@ def main(is_admin,usname):
         label='请选择大语言模型:',
         options=['Qwen 1.5', 'Llama2-Chinese']
         )
+        if selected_option == 'Qwen 1.5':
+            choice = 'qwen:32b'
+        else:
+            choice = 'llama2-chinese:13b-chat-q8_0'
         
         # max_new_tokens = st.number_input("max_new_tokens", 128, 4096, 512)
         # k = st.number_input("k", 1, 10, 3)
@@ -339,7 +343,7 @@ def main(is_admin,usname):
 
             intent_recognition_placeholder = st.empty()  # 创建一个新的占位符
             intent_recognition_placeholder.text("正在进行意图识别...")  # 在占位符中显示提示信息
-            response = Intent_Recognition(query)
+            response = Intent_Recognition(query,choice)
             intent_recognition_placeholder.empty()  # 意图识别完成后，清除提示信息
 
             prompt,yitu,entities = generate_prompt(response,query,client,bert_model, bert_tokenizer,rule, tfidf_r, device, idx2tag)
@@ -366,7 +370,7 @@ def main(is_admin,usname):
                     st.write(zhishiku_content)  # 在这里显示给定的prompt
             
 
-            for chunk in ollama.chat(model='qwen:32b',messages=[{'role': 'user', 'content': prompt}],stream=True):
+            for chunk in ollama.chat(model=choice,messages=[{'role': 'user', 'content': prompt}],stream=True):
                 last += chunk['message']['content']
                 placeholder.markdown(last)  # Update the placeholder with the new part of the message
                 
