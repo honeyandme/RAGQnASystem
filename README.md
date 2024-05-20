@@ -23,8 +23,9 @@ RAG技术：
 
 ## :fire:To do
 
+- [x] 增加界面的功能(2024.5.21)：增加了登陆、注册界面(含用户、管理员2个身份)，大模型选择按钮(可选千问和llama)、多窗口对话功能等。
 - [ ] NL2Cyhper
-- [ ] 增加界面的功能
+- [ ] 更多优化...
 
 ## Python环境配置
 
@@ -211,17 +212,27 @@ class Bert_Model(nn.Module):
 
 ## 运行界面
 
-我们将意图识别、知识库查询、对话界面都写在了```webui.py```中。您可以使用命令：
+
+
+我们将意图识别、知识库查询、对话界面都写在了```webui.py```中。2024.5.21，我们为界面增加了登陆、注册界面，设置了用户和管理员两种身份，您可以使用命令启动：
 
 ```
-streamlit run webui.py
+streamlit run login.py
 ```
 
-运行的界面如下图所示
+登陆界面如下图所示：
 
-<img src="img/jiemian.png" style="zoom:100%;" />
+<img src="img/login.png" style="zoom:100%;" />
 
+注册界面如下图所示：
 
+<img src="img/register.png" style="zoom:100%;" />
+
+管理员登陆界面如下图所示：
+
+<img src="img/admin.png" style="zoom:70%;" />
+
+<img src="img/user.png" style="zoom:70%;" />
 
 几个运行例子：
 
