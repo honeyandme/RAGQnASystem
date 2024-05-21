@@ -298,6 +298,11 @@ def main(is_admin, usname):
             show_ent = st.sidebar.checkbox("显示实体识别结果")
             show_int = st.sidebar.checkbox("显示意图识别结果")
             show_prompt = st.sidebar.checkbox("显示查询的知识库信息")
+            if st.button('修改知识图谱'):
+            # 显示一个链接，用户可以点击这个链接在新标签页中打开百度
+                st.markdown('[点击这里修改知识图谱](http://127.0.0.1:7474/)', unsafe_allow_html=True)
+
+
 
         if st.button("返回登录"):
             st.session_state.logged_in = False
